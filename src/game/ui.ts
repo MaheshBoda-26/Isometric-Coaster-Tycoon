@@ -375,8 +375,8 @@ function act(a: string, v: string, el: HTMLElement) {
   renderWin(); renderModal(); refreshChrome();
 }
 function zoomBy(d: number) {
-  let k = ZOOMS.findIndex((z) => Math.abs(z - cam.zoom) < 0.01); if (k < 0) k = 2;
-  cam.zoom = ZOOMS[clamp(k + d, 0, ZOOMS.length - 1)];
+  let k = ZOOMS.findIndex((z) => Math.abs(z - cam.zoomT) < 0.01); if (k < 0) k = 2;
+  cam.zoomT = ZOOMS[clamp(k + d, 0, ZOOMS.length - 1)];
 }
 function centerOn(r: any) {
   if (r.kind === 'coaster') { cam.fx = (r.cx + 1) * 32; cam.fy = (r.cy + 4) * 32; } else { cam.fx = r.x * 32 + 16; cam.fy = r.y * 32 + 16; }
@@ -510,7 +510,7 @@ export function startGame(host: HTMLElement): () => void {
   initRender(cv);
   const doResize = () => { resize(root.clientWidth, root.clientHeight); };
   doResize(); window.addEventListener('resize', doResize);
-  cam.fx = 40 * 32; cam.fy = 24 * 32; cam.rot = 0; cam.zoom = 1;
+  cam.fx = 40 * 32; cam.fy = 24 * 32; cam.rot = 0; cam.zoom = 1; cam.zoomT = 1;
   const handler = (e: Event) => {
     const t = (e.target as HTMLElement).closest('[data-a]') as HTMLElement | null;
     if (!t) return;
@@ -551,6 +551,8 @@ export function startGame(host: HTMLElement): () => void {
     const dt = Math.min(0.1, (t - last) / 1000); last = t;
     try {
       tickWorld(dt, updateGuests, updateStaff); tickRides(dt);
+      const dz = cam.zoomT - cam.zoom;
+      if (Math.abs(dz) > 1e-4) cam.zoom += dz * (1 - Math.pow(0.0015, dt)); else cam.zoom = cam.zoomT;
       const kx = (ui.keys['d'] || ui.keys['arrowright'] ? 1 : 0) - (ui.keys['a'] || ui.keys['arrowleft'] ? 1 : 0), ky = (ui.keys['s'] || ui.keys['arrowdown'] ? 1 : 0) - (ui.keys['w'] || ui.keys['arrowup'] ? 1 : 0);
       if (kx || ky) { const c = camScreen(); unproj(c.x + (kx * 500 * dt) / cam.zoom, c.y + (ky * 500 * dt) / cam.zoom, 0); cam.fx = clamp(UP.x, 0, W); cam.fy = clamp(UP.y, 0, W); ui.follow = null; }
       if (ui.follow && !ui.follow.dead) { cam.fx += (ui.follow.x - cam.fx) * 0.1; cam.fy += (ui.follow.y - cam.fy) * 0.1; }

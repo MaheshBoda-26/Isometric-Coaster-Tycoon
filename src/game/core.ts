@@ -9,7 +9,7 @@ export const GRAV = 24.5; // u/s^2   (1u = 0.4m)
 export const VCONV = 26062; // u/s -> internal velocity units, mph = (v*9)>>18
 export const DAY_SEC = 6; // real seconds per game day at 1x
 
-export const cam = { rot: 0, fx: W / 2, fy: W / 2 + 200, zoom: 1, vw: 800, vh: 600 };
+export const cam = { rot: 0, fx: W / 2, fy: W / 2 + 200, zoom: 1, zoomT: 1, vw: 800, vh: 600 };
 export const R = { x: 0, y: 0 };
 export const P = { x: 0, y: 0 };
 
