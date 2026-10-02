@@ -552,7 +552,7 @@ export function startGame(host: HTMLElement): () => void {
     try {
       tickWorld(dt, updateGuests, updateStaff); tickRides(dt);
       const dz = cam.zoomT - cam.zoom;
-      if (Math.abs(dz) > 1e-4) cam.zoom += dz * (1 - Math.pow(0.0015, dt)); else cam.zoom = cam.zoomT;
+      if (Math.abs(dz) > 2e-4) cam.zoom += dz * (1 - Math.pow(0.03, dt)); else cam.zoom = cam.zoomT;
       const kx = (ui.keys['d'] || ui.keys['arrowright'] ? 1 : 0) - (ui.keys['a'] || ui.keys['arrowleft'] ? 1 : 0), ky = (ui.keys['s'] || ui.keys['arrowdown'] ? 1 : 0) - (ui.keys['w'] || ui.keys['arrowup'] ? 1 : 0);
       if (kx || ky) { const c = camScreen(); unproj(c.x + (kx * 500 * dt) / cam.zoom, c.y + (ky * 500 * dt) / cam.zoom, 0); cam.fx = clamp(UP.x, 0, W); cam.fy = clamp(UP.y, 0, W); ui.follow = null; }
       if (ui.follow && !ui.follow.dead) { cam.fx += (ui.follow.x - cam.fx) * 0.1; cam.fy += (ui.follow.y - cam.fy) * 0.1; }
