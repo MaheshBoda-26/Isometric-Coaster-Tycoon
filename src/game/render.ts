@@ -412,7 +412,8 @@ export function render() {
   ctx.fillStyle = '#18222e'; ctx.fillRect(0, 0, cv.width, cv.height);
   const c = camScreen();
   ctx.setTransform(dpr * z, 0, 0, dpr * z, dpr * (vw / 2 - c.x * z), dpr * (vh / 2 - c.y * z));
-  ctx.imageSmoothingEnabled = false;
+  ctx.imageSmoothingEnabled = true;
+  if (ctx.imageSmoothingQuality !== undefined) ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(groundCv, -OX, -OY);
   const vx0 = c.x - vw / (2 * z) - 70, vx1 = c.x + vw / (2 * z) + 70, vy0 = c.y - vh / (2 * z) - 280, vy1 = c.y + vh / (2 * z) + 80;
   // water shimmer
