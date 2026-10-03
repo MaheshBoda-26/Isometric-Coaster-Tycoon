@@ -1,7 +1,7 @@
 // DOM user interface, input handling and the main loop.
 import { G, MAP, DIRS, rightDir, cam, camScreen, unproj, proj, P, UP, idx, clamp, gbp, toast, BANDS, BAND_COL, bandIndex, mphOf, beep, MONTHS, W } from './core';
 import { newGame, tickWorld, tickRides, placePath, placeScenery, placeShop, placeFlat, createCoaster, bulldoze, rideAt, hire, fire, setLoan, removeRide, freeCell, COST, STAFF, SHOPS, FLATS, monthlyWages, runningCost, footprint } from './world';
-import { validate, piecesFromSel, appendPieces, popPiece, previewPieces, curPitch, rebuild, resetRideTest, pieceName, PITCH_NAME, blockInfo, TRAIN_LEN } from './track';
+import { validate, piecesFromSel, appendPieces, popPiece, previewPieces, curPitch, rebuild, resetRideTest, pieceName, PITCH_NAME, blockInfo, TRAIN_LEN, pieceCost } from './track';
 import { startTest, startOperation, stopOperation } from './sim';
 import { installHooks, updateGuests, updateStaff, spawnInitial } from './guests';
 import { initRender, resize, render, view, cellAt, pickAt } from './render';
@@ -153,15 +153,16 @@ function winCoaster(r: any) {
     ${v.checks.map((c: any) => `<div class="${c.ok ? 'ok' : c.warn ? 'wn' : 'no'}">${c.ok ? '✓' : c.warn ? '⚠' : '✗'} ${c.label}</div>`).join('')}
     <div class="row" style="margin-top:6px"><span>Trains: <b>${r.trains}</b></span><span><span class="btn" data-a="trains" data-v="-1">−</span> <span class="btn" data-a="trains" data-v="1">＋</span></span><span class="btn" data-a="side">Flip entrance side</span></div>
     <div class="row"><span class="btn" data-a="autopath">🛤 Auto-connect path</span><span class="btn bad" data-a="demolish">Demolish ride</span></div>
+    <div class="mut" style="margin-top:4px">Layout cost: <b>${gbp(r.pieces.reduce((s, p) => s + pieceCost(p, r.sub), 0))}</b> ${view.ghostPiece && !view.ghostPiece.err ? ` · Next piece: <b>${gbp(pieceCost(view.ghostPiece.T.pieces[0], r.sub))}</b>` : ''}</div>
     <div class="mut" style="margin-top:6px">Last piece: ${r.pieces.length ? pieceName(r.pieces[r.pieces.length - 1]) : '—'}${r.pieces.length ? '' : ''}</div>`;
   } else if (step === 1) {
     if (r.status !== 'testing') h += `<div class="infobox">Run a test to measure the real physics of your layout. <b>No ratings exist until a test run completes.</b></div>`;
     else h += `<div class="infobox">Testing… the train collects stats on its first lap.</div>`;
     if (r.status === 'testing' && r.sim) {
-      const lv = r.sim.live, tr = r.sim.trains[0];
+      const lv = r.sim.live, tr = r.sim.trains[0], st = r.sim.stats;
       h += `<div class="big" style="text-align:center;color:#ffe9a8">${mphOf(lv.v)} mph</div>
       <div class="row"><span>Lap</span>${bar(tr ? tr.s : 0, r.track.L, '#6aa7e8')}</div>
-      <div class="grid g3 mut" style="text-align:center;margin:6px 0"><div>Vertical<br><b style="color:#fff">${lv.vert.toFixed(2)}G</b></div><div>Lateral<br><b style="color:#fff">${lv.lat.toFixed(2)}G</b></div><div>Longitudinal<br><b style="color:#fff">${lv.lon.toFixed(2)}G</b></div></div>
+      <div class="grid g3 mut" style="text-align:center;margin:6px 0"><div>Vertical<br><b style="color:#fff">${lv.vert.toFixed(2)}G</b><br><span class="mut">peak ${st.maxVert.toFixed(2)} / ${st.minVert.toFixed(2)}</span></div><div>Lateral<br><b style="color:#fff">${lv.lat.toFixed(2)}G</b><br><span class="mut">peak ${st.maxLat.toFixed(2)}</span></div><div>Longitudinal<br><b style="color:#fff">${lv.lon.toFixed(2)}G</b><br><span class="mut">peak ${st.maxLong.toFixed(2)}</span></div></div>
       <div class="row"><span>Test speed</span><span class="grid g3" style="width:150px">${[1, 3, 8].map((k) => `<div class="btn ${r.testSpeed === k ? 'on' : ''}" data-a="tspeed" data-v="${k}">${k}×</div>`).join('')}</span></div>
       <div class="row"><span class="mut">Trains out: ${r.sim.trains.length}/${r.trains}</span><span class="btn bad" data-a="stoptest">Stop test</span></div>`;
     } else if (r.status === 'crashed') {
@@ -475,7 +476,7 @@ function onUp(e: PointerEvent) {
     if (p.type === 'guest') { G.selected = p.g; openWin(p.g); }
     else if (p.type === 'ride') { G.selected = p.ride; openWin(p.ride); }
     else if (p.type === 'staff') toast('A ' + STAFF[p.s.type].name + ' on duty', 'info');
-    else { const r = rideAt(p.x, p.y); if (r) openWin(r); }
+    else { const r = rideAt(p.x, p.y); if (r) openWin(r); else openWin(null); }
   }
 }
 let wheelAcc = 0;
