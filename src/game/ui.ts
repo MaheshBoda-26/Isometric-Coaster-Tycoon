@@ -546,7 +546,8 @@ export function startGame(host: HTMLElement): () => void {
   elWin.addEventListener('mouseover', over); elWin.addEventListener('mouseleave', () => { if (ui.special) { ui.special = null; refreshGhost(); } });
   elWin.addEventListener('pointerdown', () => { ui.dragRange = true; });
   elModal.addEventListener('pointerdown', () => { ui.dragRange = true; });
-  window.addEventListener('pointerup', () => { ui.dragRange = false; });
+  const onUpWin = () => { ui.dragRange = false; };
+  window.addEventListener('pointerup', onUpWin);
   cv.addEventListener('pointerdown', onDown); cv.addEventListener('pointermove', onMove); cv.addEventListener('pointerup', onUp);
   cv.addEventListener('wheel', onWheel, { passive: false }); cv.addEventListener('contextmenu', (e) => e.preventDefault());
   window.addEventListener('keydown', onKey); window.addEventListener('keyup', onKey);
@@ -578,6 +579,8 @@ export function startGame(host: HTMLElement): () => void {
   return () => {
     cancelAnimationFrame(raf);
     window.removeEventListener('resize', doResize); window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKey);
+    window.removeEventListener('pointerup', onUpWin);
+    root.removeEventListener('pointerdown', handler); root.removeEventListener('input', onInput);
     style.remove(); root.innerHTML = '';
   };
 }
