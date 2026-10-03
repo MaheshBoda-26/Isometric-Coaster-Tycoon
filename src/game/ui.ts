@@ -154,7 +154,7 @@ function winCoaster(r: any) {
     ${v.checks.map((c: any) => `<div class="${c.ok ? 'ok' : c.warn ? 'wn' : 'no'}">${c.ok ? '✓' : c.warn ? '⚠' : '✗'} ${c.label}</div>`).join('')}
     <div class="row" style="margin-top:6px"><span>Trains: <b>${r.trains}</b></span><span><span class="btn" data-a="trains" data-v="-1">−</span> <span class="btn" data-a="trains" data-v="1">＋</span></span><span class="btn" data-a="side">Flip entrance side</span></div>
     <div class="row"><span class="btn" data-a="autopath">🛤 Auto-connect path</span><span class="btn bad" data-a="demolish">Demolish ride</span></div>
-    <div class="mut" style="margin-top:4px">Layout cost: <b>${gbp(r.pieces.reduce((s, p) => s + pieceCost(p, r.sub), 0))}</b> ${view.ghostPiece && !view.ghostPiece.err ? ` · Next piece: <b>${gbp(pieceCost(view.ghostPiece.T.pieces[0], r.sub))}</b>` : ''}</div>
+    <div class="mut" style="margin-top:4px">Layout cost: <b>${gbp(r.pieces.reduce((s, p) => s + pieceCost(p, r.sub), 0))}</b> ${view.ghostPiece && !view.ghostPiece.err && view.ghostPiece.T && view.ghostPiece.T.pieces && view.ghostPiece.T.pieces[0] ? ` · Next piece: <b>${gbp(pieceCost(view.ghostPiece.T.pieces[0], r.sub))}</b>` : ''}</div>
     <div class="mut" style="margin-top:6px">Last piece: ${r.pieces.length ? pieceName(r.pieces[r.pieces.length - 1]) : '—'}${r.pieces.length ? '' : ''}</div>`;
   } else if (step === 1) {
     if (r.status !== 'testing') h += `<div class="infobox">Run a test to measure the real physics of your layout. <b>No ratings exist until a test run completes.</b></div>`;
@@ -581,12 +581,12 @@ export function startGame(host: HTMLElement): () => void {
   cv.addEventListener('wheel', onWheel, { passive: false }); cv.addEventListener('contextmenu', (e) => e.preventDefault());
   (window as any).__rct = { G, cam, view, proj, P };
   window.addEventListener('keydown', onKey); window.addEventListener('keyup', onKey);
-  function startWelcome() {
-    const r = G.rides.find((x: any) => x.kind === 'coaster');
-    if (r) { openWin(r); r.step = 1; centerOn(r); cam.fy = 20 * 32; cam.fx = 34 * 32; }
-    toast('Welcome! Your Mini Steel Coaster is built. Press “Start test run”, then Rate → Price → Open.', 'good');
-    toast('Guests will decide for themselves whether it is worth riding.', 'info');
-  }
+function startWelcome() {
+  const r = G.rides.find((x: any) => x.kind === 'coaster');
+  if (r) { r.step = 1; openWin(r); centerOn(r); cam.fy = 20 * 32; cam.fx = 34 * 32; }
+  toast('Welcome! Your Mini Steel Coaster is built. Press “Start test run”, then Rate → Price → Open.', 'good');
+  toast('Guests will decide for themselves whether it is worth riding.', 'info');
+}
   startWelcome();
   refreshChrome();
   let raf = 0, last = performance.now(), uiT = 0;

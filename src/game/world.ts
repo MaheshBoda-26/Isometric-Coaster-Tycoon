@@ -324,7 +324,7 @@ export function rideAt(x: number, y: number) {
 export function hire(type: string) {
   const [gx, gy] = cellCenter(G.gatePath);
   G.staff.push({ id: G.nextId++, type, x: gx, y: gy, cx: G.gatePath % MAP, cy: (G.gatePath / MAP) | 0, nx: G.gatePath % MAP, ny: (G.gatePath / MAP) | 0, tx: gx, ty: gy, px: -1, py: -1, timer: 0, job: null, speed: 22 });
-  toast('Hired a ' + STAFF[type].name + ' (' + STAFF[type].wage + '/month)', 'info');
+  toast('Hired ' + (/^[aeiou]/i.test(STAFF[type].name) ? 'an' : 'a') + ' ' + STAFF[type].name + ' (' + STAFF[type].wage + '/month)', 'info');
 }
 export function fire(type: string) {
   const k = G.staff.findIndex((s: any) => s.type === type);
@@ -466,7 +466,7 @@ function buildStarter() {
   m.obj[G.gateIdx] = { t: 'gate' };
   // starter coaster: station -> lift -> drop -> banked sweepers -> two hills -> brakes -> station
   const ride: any = {
-    id: G.nextId++, kind: 'coaster', sub: 'steel', name: 'Mini Steel Coaster', cx: 40, cy: 12, h: 1, z0: 16, side: -1, pieces: [], trains: 1, status: 'building', step: 0,
+    id: G.nextId++, kind: 'coaster', sub: 'steel', name: 'Mini Steel Coaster', cx: 40, cy: 12, h: 1, z0: 16, side: -1, pieces: [], trains: 1, status: 'building', step: 0, closed: true,
     sel: { turn: 0, pitch: 0, bank: false, lift: false, cover: false }, price: 0, queue: [], queuePts: [], cap: SEATS, customers: 0, income: 0, spent: 1200,
     color: COASTER_COLORS[0], testSpeed: 3, refused: { int: 0, price: 0, queue: 0, nau: 0 }, age: 0, x: 40, y: 12,
   };
