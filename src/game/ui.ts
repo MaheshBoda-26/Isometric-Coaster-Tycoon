@@ -1,5 +1,5 @@
 // DOM user interface, input handling and the main loop.
-import { G, MAP, DIRS, rightDir, cam, camScreen, unproj, UP, idx, clamp, gbp, toast, BANDS, BAND_COL, bandIndex, mphOf, beep, MONTHS, W } from './core';
+import { G, MAP, DIRS, rightDir, cam, camScreen, unproj, proj, P, UP, idx, clamp, gbp, toast, BANDS, BAND_COL, bandIndex, mphOf, beep, MONTHS, W } from './core';
 import { newGame, tickWorld, tickRides, placePath, placeScenery, placeShop, placeFlat, createCoaster, bulldoze, rideAt, hire, fire, setLoan, removeRide, freeCell, COST, STAFF, SHOPS, FLATS, monthlyWages, runningCost, footprint } from './world';
 import { validate, piecesFromSel, appendPieces, popPiece, previewPieces, curPitch, rebuild, resetRideTest, pieceName, PITCH_NAME, blockInfo, TRAIN_LEN } from './track';
 import { startTest, startOperation, stopOperation } from './sim';
@@ -550,6 +550,7 @@ export function startGame(host: HTMLElement): () => void {
   window.addEventListener('pointerup', onUpWin);
   cv.addEventListener('pointerdown', onDown); cv.addEventListener('pointermove', onMove); cv.addEventListener('pointerup', onUp);
   cv.addEventListener('wheel', onWheel, { passive: false }); cv.addEventListener('contextmenu', (e) => e.preventDefault());
+  (window as any).__rct = { G, cam, view, proj, P };
   window.addEventListener('keydown', onKey); window.addEventListener('keyup', onKey);
   function startWelcome() {
     const r = G.rides.find((x: any) => x.kind === 'coaster');
