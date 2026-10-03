@@ -124,8 +124,15 @@ function winCoaster(r: any) {
   const unlocked = [true, v.ok && r.closed, !!r.ratings, !!r.ratings, !!r.ratings];
   const names = ['1 Build', '2 Test', '3 Rate', '4 Price', '5 Open'];
   const done = [r.closed, !!r.ratings, !!r.ratings, !!r.ratings && r.price > 0, r.status === 'open'];
+  const lockReasons = [
+    false,
+    !r.closed ? 'Complete the circuit first' : false,
+    !r.ratings ? 'Run a test first' : false,
+    !r.ratings ? 'Run a test first' : r.price <= 0 ? 'Set a price first' : false,
+    !r.ratings ? 'Run a test first' : r.price <= 0 ? 'Set a price first' : false
+  ];
   let h = `<div class="wh"><span>${r.sub === 'steel' ? '🎢' : '🪵'} ${r.name}${stChip(r)}</span><span class="btn" data-a="closewin">✕</span></div>
-  <div class="steps">${names.map((n, i) => `<div class="${i === step ? 'cur' : done[i] ? 'done' : ''} ${unlocked[i] ? '' : 'lock'}" data-a="step" data-v="${i}">${done[i] && i !== step ? '✓ ' : ''}${n}</div>`).join('')}</div><div class="wb">`;
+  <div class="steps">${names.map((n, i) => `<div class="${i === step ? 'cur' : done[i] ? 'done' : ''} ${unlocked[i] ? '' : 'lock'}" data-a="step" data-v="${i}" title="${lockReasons[i] || ''}">${done[i] && i !== step ? '✓ ' : ''}${n}</div>`).join('')}</div><div class="wb">`;
   if (step === 0) {
     const s = r.sel, cp = curPitch(r), wood = r.sub === 'wood';
     const tn: [number, string][] = [[-2, '◀◀ Large'], [-1, '◀ Small'], [0, '▲ Straight'], [1, 'Small ▶'], [2, 'Large ▶▶']];
@@ -352,7 +359,7 @@ function act(a: string, v: string, el: HTMLElement) {
     case 'closemodal': ui.modal = null; break;
     case 'closewin': openWin(null); break;
     case 'selride': { const rr = G.rides.find((x: any) => x.id === +v); if (rr) { openWin(rr); ui.modal = null; centerOn(rr); } break; }
-    case 'step': if (r && !el.classList.contains('lock')) { r.step = +v; ui.lastWin = ''; refreshGhost(); } break;
+    case 'step': if (r && !el.classList.contains('lock')) { r.step = +v; ui.lastWin = ''; refreshGhost(); } else if (r) { const reasons = { 1: 'Complete the circuit first', 2: 'Run a test first', 3: r.ratings && r.price <= 0 ? 'Set a price first' : 'Run a test first', 4: r.ratings && r.price <= 0 ? 'Set a price first' : 'Run a test first' }; toast('Locked — ' + (reasons[+v] || 'Unavailable'), 'bad'); } break;
     case 'turn': r.sel.turn = +v; refreshGhost(); break;
     case 'pitch': r.sel.pitch = +v; refreshGhost(); break;
     case 'tog': r.sel[v] = !r.sel[v]; refreshGhost(); break;
