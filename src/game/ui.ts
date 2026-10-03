@@ -458,7 +458,20 @@ function onUp(e: PointerEvent) {
     else { const r = rideAt(p.x, p.y); if (r) openWin(r); }
   }
 }
-function onWheel(e: WheelEvent) { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1 : -1); }
+let wheelAcc = 0;
+function onWheel(e: WheelEvent) {
+  e.preventDefault();
+  // Normalize: deltaMode 1 = lines, 2 = pages
+  const d = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 120 : 1);
+  // Reset if scroll direction reversed
+  if (wheelAcc !== 0 && Math.sign(d) !== Math.sign(wheelAcc)) wheelAcc = 0;
+  wheelAcc += d;
+  // Only step zoom after a real scroll gesture (~one wheel notch); absorbs trackpad momentum flicker
+  if (Math.abs(wheelAcc) >= 60) {
+    zoomBy(wheelAcc < 0 ? 1 : -1);
+    wheelAcc = 0;
+  }
+}
 function onKey(e: KeyboardEvent) {
   if ((e.target as HTMLElement).tagName === 'INPUT') return;
   const k = e.key.toLowerCase();
