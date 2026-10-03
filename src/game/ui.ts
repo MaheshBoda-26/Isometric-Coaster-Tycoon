@@ -2,6 +2,7 @@
 import { G, MAP, DIRS, rightDir, cam, camScreen, unproj, proj, P, UP, idx, clamp, gbp, toast, BANDS, BAND_COL, bandIndex, mphOf, beep, MONTHS, W } from './core';
 import { newGame, tickWorld, tickRides, placePath, placeScenery, placeShop, placeFlat, createCoaster, bulldoze, rideAt, hire, fire, setLoan, removeRide, freeCell, COST, STAFF, SHOPS, FLATS, monthlyWages, runningCost, footprint } from './world';
 import { validate, piecesFromSel, appendPieces, popPiece, previewPieces, curPitch, rebuild, resetRideTest, pieceName, PITCH_NAME, blockInfo, TRAIN_LEN, pieceCost } from './track';
+import { getPathBlockReason, getSceneryBlockReason, getShopBlockReason, getFlatBlockReason, getCoasterBlockReason } from './world';
 import { startTest, startOperation, stopOperation } from './sim';
 import { installHooks, updateGuests, updateStaff, spawnInitial } from './guests';
 import { initRender, resize, render, view, cellAt, pickAt } from './render';
@@ -24,9 +25,9 @@ const CSS = `
 #sub .it{pointer-events:auto;display:flex;flex-direction:column;align-items:center;min-width:84px;padding:5px 8px;font-size:11px}
 #sub .it small{color:#ffe9a8;font-size:10px}
 #help{bottom:0;height:24px;background:#0f1822;font-size:11px;color:#9fb5cc;border-top:1px solid #000;justify-content:center}
-#win,#modal{position:absolute;z-index:6;background:linear-gradient(#34475d,#243445);border:2px solid #0d151f;border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.6);font-size:12px}
-#win{top:48px;right:8px;width:340px;max-height:calc(100% - 150px);overflow:auto;display:none}
-#modal{top:56px;left:50%;transform:translateX(-50%);width:560px;max-width:94%;max-height:calc(100% - 160px);overflow:auto;display:none}
+#win,#modal{position:absolute;background:linear-gradient(#34475d,#243445);border:2px solid #0d151f;border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.6);font-size:12px}
+#win{z-index:6;top:48px;right:8px;width:340px;max-height:calc(100% - 150px);overflow:auto;display:none}
+#modal{z-index:8;top:56px;left:50%;transform:translateX(-50%);width:560px;max-width:94%;max-height:calc(100% - 160px);overflow:auto;display:none}
 .wh{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:linear-gradient(#4b6482,#2f4259);border-bottom:1px solid #0d151f;font-weight:bold;font-size:13px;position:sticky;top:0;z-index:2}
 .wb{padding:9px 10px}.wb h4{margin:8px 0 4px;font-size:11px;color:#9fc0e4;text-transform:uppercase;letter-spacing:.07em}
 .chip{display:inline-block;padding:1px 7px;border-radius:9px;font-size:10px;background:#555;color:#fff;margin-left:6px}
@@ -242,6 +243,9 @@ function renderWin() {
   if (w.kind === 'coaster') h = winCoaster(w); else if (w.kind) h = winSimple(w); else h = winGuest(w);
   if (h !== ui.lastWin) { elWin.innerHTML = h; ui.lastWin = h; elWin.scrollTop = st; }
   elWin.style.display = 'block';
+  const topH = elTop.getBoundingClientRect().height;
+  elWin.style.top = topH + 'px';
+  elWin.style.maxHeight = `calc(100% - ${topH + 110}px)`;
 }
 
 function modalHtml() {
@@ -299,7 +303,7 @@ function renderModal() {
 // ---------------- actions ----------------
 function openWin(w: any) { ui.win = w; ui.lastWin = ''; ui.err = ''; ui.follow = null; view.selRide = w && w.kind ? w : null; if (w && w.kind === 'coaster') { if (w.step === undefined) w.step = 0; if (w.status === 'open') w.step = 4; else if (w.ratings && w.step === 0) w.step = 2; } refreshGhost(); renderWin(); }
 function setTool(t: string) {
-  if (t.startsWith('cat:')) { const c = t.slice(4); ui.cat = ui.cat === c ? null : c; ui.tool = 'select'; }
+  if (t.startsWith('cat:')) { const c = t.slice(4); ui.cat = ui.cat === c ? null : c; }
   else { ui.tool = t; if (!Object.values(SUBMENUS).some((l) => l.some((s) => s.id === t))) ui.cat = null; }
   updateHover();
 }
@@ -405,26 +409,28 @@ function validPlaceCell(tool: string, x: number, y: number): boolean {
 }
 function updateHover() {
   const c = cellAt(ui.mouse.x, ui.mouse.y);
-  view.hx = c.x; view.hy = c.y; view.cells = []; view.ghostKind = null; view.ghostCell = null;
+  view.hx = c.x; view.hy = c.y; view.cells = []; view.ghostKind = null; view.ghostCell = null; view.ghostErr = null;
   const t = ui.tool;
   const topH = elTop.getBoundingClientRect().bottom;
   const toolsTop = elTools.getBoundingClientRect().top;
   if (ui.mouse.y < topH || ui.mouse.y > toolsTop) return;
-  if (t === 'path' || t === 'queue') view.cells = [[c.x, c.y, validPlaceCell(t, c.x, c.y)]];
+  if (t === 'path' || t === 'queue') { const ok = validPlaceCell(t, c.x, c.y); view.cells = [[c.x, c.y, ok]]; view.ghostErr = ok ? null : getPathBlockReason(c.x, c.y, t === 'path' ? 1 : 2); }
   else if (t === 'bulldoze') view.cells = [[c.x, c.y, false]];
-  else if (['tree1', 'tree2', 'tree3', 'bush', 'flower', 'bench', 'lamp', 'bin'].includes(t)) { view.ghostKind = t; view.ghostCell = [c.x, c.y]; view.cells = [[c.x, c.y, validPlaceCell(t, c.x, c.y)]]; }
-  else if (SHOPS[t]) { const ok = freeCell(c.x, c.y) && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => G.map.path[idx(c.x + dx, c.y + dy)] === 1); view.ghostKind = t; view.ghostCell = [c.x, c.y]; view.cells = [[c.x, c.y, ok]]; }
+  else if (['tree1', 'tree2', 'tree3', 'bush', 'flower', 'bench', 'lamp', 'bin'].includes(t)) { const ok = validPlaceCell(t, c.x, c.y); view.ghostKind = t; view.ghostCell = [c.x, c.y]; view.cells = [[c.x, c.y, ok]]; view.ghostErr = ok ? null : getSceneryBlockReason(t, c.x, c.y); }
+  else if (SHOPS[t]) { const ok = freeCell(c.x, c.y) && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => G.map.path[idx(c.x + dx, c.y + dy)] === 1); view.ghostKind = t; view.ghostCell = [c.x, c.y]; view.cells = [[c.x, c.y, ok]]; view.ghostErr = ok ? null : getShopBlockReason(t, c.x, c.y); }
   else if (t === 'carousel' || t === 'ferris') {
     const cells: any[] = []; let ok = true;
     for (let dx = 0; dx < 2; dx++) for (let dy = 0; dy < 2; dy++) { const f = freeCell(c.x + dx, c.y + dy); ok = ok && f; cells.push([c.x + dx, c.y + dy, f]); }
     const adj = cells.some(([x, y]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => G.map.path[idx(x + dx, y + dy)] === 1));
     view.cells = cells.map(([x, y]) => [x, y, ok && adj]); view.ghostKind = t; view.ghostCell = [c.x, c.y];
+    view.ghostErr = ok && adj ? null : getFlatBlockReason(t, c.x, c.y);
   } else if (t.startsWith('coaster')) {
     const d = DIRS[ui.placeH], rt = rightDir(ui.placeH);
     const cells: any[] = [];
     for (let k = 0; k < 3; k++) cells.push([c.x + d[0] * k, c.y + d[1] * k, freeCell(c.x + d[0] * k, c.y + d[1] * k)]);
     cells.push([c.x - rt[0], c.y - rt[1], freeCell(c.x - rt[0], c.y - rt[1])], [c.x + d[0] * 2 - rt[0], c.y + d[1] * 2 - rt[1], freeCell(c.x + d[0] * 2 - rt[0], c.y + d[1] * 2 - rt[1])]);
     view.cells = cells;
+    view.ghostErr = getCoasterBlockReason(t.slice(8), c.x, c.y);
   }
 }
 
@@ -440,7 +446,9 @@ function applyTool(x: number, y: number, drag = false) {
     if (G.cash < COASTER_COST) err = 'Not enough cash';
     else { const res = createCoaster(t.slice(8), x, y, ui.placeH); if (res.err) err = res.err; else { ui.tool = 'select'; ui.cat = null; openWin(res.ride); res.ride.step = 0; toast('Build the circuit piece by piece. Use ✓ checks below, then Test.', 'info'); beep(500, 0.08); refreshChrome(); } }
   }
-  if (err) { if (!drag || Math.random() < 0.1) toast(err, 'bad'); beep(150, 0.08); } else if (t !== 'select') beep(400, 0.03, 'square', 0.02);
+  if (err === 'ALREADY_EXISTS') {
+    elHelp.innerHTML = 'Already a ' + (t === 'path' ? 'footpath' : 'queue path') + ' here';
+  } else if (err) { if (!drag || Math.random() < 0.1) toast(err, 'bad'); beep(150, 0.08); } else if (t !== 'select') beep(400, 0.03, 'square', 0.02);
   updateHover(); ui.lastWin = '';
 }
 
@@ -594,7 +602,7 @@ export function startGame(host: HTMLElement): () => void {
       if (ui.follow && !ui.follow.dead) { cam.fx += (ui.follow.x - cam.fx) * 0.1; cam.fy += (ui.follow.y - cam.fy) * 0.1; }
       render();
       uiT += dt;
-      if (uiT > 0.25) { uiT = 0; refreshChrome(); if (!ui.dragRange) { renderWin(); renderModal(); } if (ui.win && ui.win.kind === 'coaster' && (ui.win.step || 0) === 0) refreshGhost(); updateToasts(); overlay(); }
+      if (uiT > 0.25) { uiT = 0; refreshChrome(); if (!ui.dragRange) { renderWin(); renderModal(); } if (ui.win && ui.win.kind === 'coaster' && (ui.win.step || 0) === 0) refreshGhost(); updateToasts(); overlay(); if (view.ghostErr) elHelp.innerHTML = view.ghostErr; else if (!elHelp.innerHTML.startsWith('Drag:')) elHelp.innerHTML = 'Drag: pan · Wheel: zoom · Q/E: rotate · R: turn placement · Enter: build piece · Backspace: undo piece · 1-3: speed · P: pause · Esc: cancel'; }
     } catch (err) { if (!ui.errLogged) { console.error(err); ui.errLogged = true; } }
   };
   raf = requestAnimationFrame(frame);

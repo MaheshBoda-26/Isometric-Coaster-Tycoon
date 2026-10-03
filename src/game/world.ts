@@ -142,7 +142,7 @@ export function placePath(x: number, y: number, type: number): string | null {
   const ob = m.obj[i];
   if (ob && !REMOVABLE.includes(ob.t)) return 'Something is in the way';
   if (trackLow(i)) return 'Track is in the way';
-  if (m.path[i] === type) return null;
+  if (m.path[i] === type) return 'ALREADY_EXISTS';
   const c = COST[type === 1 ? 'path' : 'queue'];
   if (G.cash < c) return 'Not enough cash';
   spend(c, 'construction');
@@ -206,6 +206,57 @@ export function placeFlat(kind: string, x: number, y: number): string | null {
   return null;
 }
 const bandOf = (r: number) => Math.min(5, Math.round(r * 100) >> 8);
+
+
+// Placement validation helpers (for ghost preview)
+export function getPathBlockReason(x: number, y: number, type: number): string | null {
+  if (x < 1 || y < 1 || x > MAP - 2 || y > MAP - 2) return 'Out of bounds';
+  const m = G.map, i = idx(x, y);
+  if (m.ground[i] === 1) return "Can't build on water";
+  const ob = m.obj[i];
+  if (ob && !REMOVABLE.includes(ob.t)) return 'Something is in the way';
+  if (trackLow(i)) return 'Track is in the way';
+  if (m.path[i] === type) return 'ALREADY_EXISTS';
+  const c = COST[type === 1 ? 'path' : 'queue'];
+  if (G.cash < c) return 'Not enough cash';
+  return null;
+}
+
+export function getSceneryBlockReason(kind: string, x: number, y: number): string | null {
+  if (x < 1 || y < 1 || x > MAP - 2 || y > MAP - 2) return 'Out of bounds';
+  const m = G.map, i = idx(x, y);
+  const c = COST[kind];
+  if (kind === 'bench' || kind === 'lamp' || kind === 'bin') {
+    if (!m.path[i]) return 'Must be placed on a footpath';
+    if (m.furn[i]) return 'Already something here';
+    if (G.cash < c) return 'Not enough cash';
+    return null;
+  }
+  if (!freeCell(x, y)) return 'Cannot build here';
+  if (G.cash < c) return 'Not enough cash';
+  return null;
+}
+
+export function getShopBlockReason(kind: string, x: number, y: number): string | null {
+  if (!freeCell(x, y)) return 'Cannot build here';
+  const i = idx(x, y);
+  if (!adjacentPath([i])) return 'Shops must be built next to a footpath';
+  if (G.cash < COST[kind]) return 'Not enough cash';
+  return null;
+}
+
+export function getFlatBlockReason(kind: string, x: number, y: number): string | null {
+  const cells = [idx(x, y), idx(x + 1, y), idx(x, y + 1), idx(x + 1, y + 1)];
+  for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) if (!freeCell(x + dx, y + dy)) return 'Cannot build here';
+  if (!adjacentPath(cells)) return 'Rides must be built next to a footpath';
+  if (G.cash < COST[kind]) return 'Not enough cash';
+  return null;
+}
+
+export function getCoasterBlockReason(sub: string, x: number, y: number): string | null {
+  if (G.cash < COASTER_COST) return 'Not enough cash';
+  return null;
+}
 
 export function createCoaster(sub: string, x: number, y: number, h: number): { ride?: any; err?: string } {
   if (x < 2 || y < 2 || x > MAP - 3 || y > MAP - 3) return { err: 'Too close to the edge of the park' };

@@ -39,6 +39,7 @@ export function spawnInitial(n: number) {
     const g = newGuest(pick(tiles));
     g.age = rnd() * 100; g.happiness = rint(130, 240); g.hunger = rint(10, 160); g.thirst = rint(10, 140);
     G.guests.push(g);
+    G.stats.guestsTotal++;
   }
 }
 
