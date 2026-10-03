@@ -10,7 +10,7 @@ const CSS = `
 #app{position:fixed;inset:0;overflow:hidden;font-family:'Trebuchet MS',Verdana,sans-serif;color:#eef2f7;user-select:none;-webkit-user-select:none;background:#18222e}
 #app canvas{position:absolute;left:0;top:0;display:block}
 #app .bar{position:absolute;left:0;right:0;display:flex;align-items:center;gap:8px;padding:0 10px;z-index:5}
-#top{top:0;height:40px;background:linear-gradient(#41566f,#27374b);border-bottom:2px solid #0d151f;box-shadow:0 2px 8px rgba(0,0,0,.5);font-size:13px}
+#top{top:0;min-height:40px;height:auto;background:linear-gradient(#41566f,#27374b);border-bottom:2px solid #0d151f;box-shadow:0 2px 8px rgba(0,0,0,.5);font-size:13px;flex-wrap:wrap;row-gap:4px;overflow:visible;max-height:88px}
 #top .stat{display:flex;flex-direction:column;line-height:1.05;padding:2px 8px;background:#16222f;border:1px solid #0b121a;border-radius:3px;min-width:70px}
 #top .stat b{font-size:15px;color:#ffe9a8}#top .stat small{font-size:9px;color:#8fa6bf;letter-spacing:.08em;text-transform:uppercase}
 .btn{cursor:pointer;background:linear-gradient(#5b7594,#3c516b);border:1px solid #0d151f;border-top-color:#8fb0d4;border-radius:4px;color:#f2f6fb;padding:4px 9px;font-size:12px;font-family:inherit;white-space:nowrap}
