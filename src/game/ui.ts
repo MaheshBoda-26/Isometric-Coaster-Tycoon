@@ -132,9 +132,9 @@ function winCoaster(r: any) {
     const ps: [number, string][] = [[-2, '↓ 60°'], [-1, '↓ 25°'], [0, '— Level'], [1, '↑ 25°'], [2, '↑ 60°']];
     const okPitch = (p: number) => Math.abs(p - cp) <= 1 && !(wood && p > 1);
     h += `<h4>Direction</h4><div class="grid g5">${tn.map(([k, n]) => `<div class="btn ${s.turn === k ? 'on' : ''}" data-a="turn" data-v="${k}">${n}</div>`).join('')}</div>
-    <h4>Slope (track is ${PITCH_NAME[cp]})</h4><div class="grid g5">${ps.map(([k, n]) => `<div class="btn ${s.pitch === k ? 'on' : ''} ${okPitch(k) ? '' : 'dis'}" data-a="pitch" data-v="${k}">${n}</div>`).join('')}</div>
+    <h4>Slope (track is ${PITCH_NAME[cp]})</h4><div class="grid g5">${ps.map(([k, n]) => `<div class="btn ${s.pitch === k ? 'on' : ''} ${okPitch(k) ? '' : 'dis'}" data-a="pitch" data-v="${k}" title="${okPitch(k) ? '' : 'Slopes only change one step at a time (level ↔ 25° ↔ 60°)'}">${n}</div>`).join('')}</div>
     <div class="grid g3" style="margin-top:5px"><div class="btn ${s.bank ? 'on' : ''}" data-a="tog" data-v="bank">Banked</div><div class="btn ${s.lift ? 'on' : ''}" data-a="tog" data-v="lift">Chain lift</div><div class="btn ${s.cover ? 'on' : ''}" data-a="tog" data-v="cover">Covered</div></div>
-    <div class="grid g2" style="margin-top:6px"><div class="btn go ${r.closed ? 'dis' : ''}" data-a="build" style="padding:8px">⬛ Build piece <small>(Enter)</small></div><div class="btn bad ${r.pieces.length ? '' : 'dis'}" data-a="undo" style="padding:8px">↩ Remove last <small>(⌫)</small></div></div>
+    <div class="grid g2" style="margin-top:6px"><div class="btn go ${r.closed ? 'dis' : ''}" data-a="build" style="padding:8px" title="${r.closed ? 'Circuit complete — use Undo to change the layout' : ''}">⬛ Build piece <small>(Enter)</small></div><div class="btn bad ${r.pieces.length ? '' : 'dis'}" data-a="undo" style="padding:8px" title="${r.pieces.length ? '' : 'No pieces to remove'}">↩ Remove last <small>(⌫)</small></div></div>
     <h4>Special pieces</h4><div class="grid g3">
     <div class="btn" data-a="sp" data-v="station" data-sp="station">Station</div><div class="btn" data-a="sp" data-v="brake" data-sp="brake">Brakes</div><div class="btn" data-a="sp" data-v="block" data-sp="block">Block brake</div>
     <div class="btn" data-a="sp" data-v="photo" data-sp="photo">Photo</div><div class="btn ${wood ? 'dis' : ''}" data-a="sp" data-v="loop" data-sp="loop">Vertical loop</div><div class="btn ${wood ? 'dis' : ''}" data-a="sp" data-v="helixL" data-sp="helixL">Helix ⟲</div>
@@ -162,7 +162,7 @@ function winCoaster(r: any) {
     } else if (r.ratings) {
       h += `<div class="ok">✓ Test completed — see the Rate tab.</div><div class="btn" style="margin-top:6px" data-a="test">Run the test again</div>`;
     } else {
-      h += `<div class="btn go ${v.ok ? '' : 'dis'}" data-a="test" style="padding:9px;text-align:center">▶ Start test run</div>` + (v.ok ? '' : '<div class="warnbox">Complete the circuit and fix the red items first.</div>');
+      h += `<div class="btn go ${v.ok ? '' : 'dis'}" data-a="test" style="padding:9px;text-align:center" title="${v.ok ? '' : 'Complete the circuit and fix the red items first'}">▶ Start test run</div>` + (v.ok ? '' : '<div class="warnbox">Complete the circuit and fix the red items first.</div>');
     }
     h += `<div class="row" style="margin-top:8px"><span></span><span class="btn bad" data-a="demolish">Demolish ride</span></div>`;
   } else if (step === 2 && r.ratings) {
