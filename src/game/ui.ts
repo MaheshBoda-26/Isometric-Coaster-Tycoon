@@ -16,7 +16,7 @@ const CSS = `
 .btn{cursor:pointer;background:linear-gradient(#5b7594,#3c516b);border:1px solid #0d151f;border-top-color:#8fb0d4;border-radius:4px;color:#f2f6fb;padding:4px 9px;font-size:12px;font-family:inherit;white-space:nowrap}
 .btn:hover{filter:brightness(1.18)}.btn:active{transform:translateY(1px)}
 .btn.on{background:linear-gradient(#e8b53c,#b8821c);color:#201500;border-color:#6b4a08}
-.btn.dis{opacity:.4;pointer-events:none}.btn.go{background:linear-gradient(#58c074,#2d8a4a)}.btn.bad{background:linear-gradient(#d4584a,#963024)}
+.btn.dis{opacity:.45;pointer-events:auto;cursor:help}.btn.go{background:linear-gradient(#58c074,#2d8a4a)}.btn.bad{background:linear-gradient(#d4584a,#963024)}
 #tools{bottom:24px;height:54px;justify-content:center;background:linear-gradient(#2b3d52,#1b2735);border-top:2px solid #0d151f;gap:6px}
 #tools .tb{display:flex;flex-direction:column;align-items:center;justify-content:center;width:72px;height:44px;font-size:10px;gap:1px}
 #tools .tb span{font-size:18px;line-height:1}
@@ -85,12 +85,12 @@ function buildChrome() {
 function topHtml() {
   const rc = G.parkRating >= 700 ? '#6fe08a' : G.parkRating >= 600 ? '#ffd166' : '#ff7b6b';
   const warn = G.daysBelow > 0 ? `<div class="stat" style="border-color:#a04a40"><b style="color:#ff8d82">${29 - G.daysBelow}d</b><small>until closure</small></div>` : '';
-  return `<div style="font-weight:bold;font-size:15px;color:#ffe9a8;letter-spacing:.04em">🎡 RCT Park</div>
-  <div class="stat"><b style="color:${G.cash < 0 ? '#ff8d82' : '#ffe9a8'}">${gbp(G.cash, 0)}</b><small>Cash</small></div>
-  <div class="stat"><b>${G.guests.length}</b><small>Guests</small></div>
-  <div class="stat" style="min-width:110px"><b style="color:${rc}">${Math.round(G.parkRating)}</b><small>Park rating</small><div class="pb" style="height:4px;margin-top:1px;flex:none"><i style="width:${G.parkRating / 9.99}%;background:${rc}"></i></div></div>
+  return `<div style="font-weight:bold;font-size:15px;color:#ffe9a8;letter-spacing:.04em;white-space:nowrap;flex:none">🎡 RCT Park</div>
+  <div class="stat" style="flex:none"><b style="color:${G.cash < 0 ? '#ff8d82' : '#ffe9a8'}">${gbp(G.cash, 0)}</b><small>Cash</small></div>
+  <div class="stat" style="flex:none"><b>${G.guests.length}</b><small>Guests</small></div>
+  <div class="stat" style="min-width:110px;flex:none"><b style="color:${rc}">${Math.round(G.parkRating)}</b><small>Park rating</small><div class="pb" style="height:4px;margin-top:1px;flex:none"><i style="width:${G.parkRating / 9.99}%;background:${rc}"></i></div></div>
   ${warn}
-  <div class="stat"><b style="font-size:13px">${dateStr()}</b><small>${G.entryMode === 'fee' ? 'Entry ' + gbp(G.entryFee) : 'Pay per ride'}</small></div>
+  <div class="stat" style="flex:none"><b style="font-size:13px">${dateStr()}</b><small>${G.entryMode === 'fee' ? 'Entry ' + gbp(G.entryFee) : 'Pay per ride'}</small></div>
   <div style="flex:1"></div>
   <div class="btn ${G.paused ? 'on' : ''}" data-a="pause">⏸</div>
   <div class="btn ${!G.paused && G.speed === 1 ? 'on' : ''}" data-a="speed" data-v="1">▶</div><div class="btn ${!G.paused && G.speed === 2 ? 'on' : ''}" data-a="speed" data-v="2">▶▶</div><div class="btn ${!G.paused && G.speed === 4 ? 'on' : ''}" data-a="speed" data-v="4">▶▶▶</div>
@@ -148,7 +148,8 @@ function winCoaster(r: any) {
     <div class="row"><span class="btn" data-a="autopath">🛤 Auto-connect path</span><span class="btn bad" data-a="demolish">Demolish ride</span></div>
     <div class="mut" style="margin-top:6px">Last piece: ${r.pieces.length ? pieceName(r.pieces[r.pieces.length - 1]) : '—'}${r.pieces.length ? '' : ''}</div>`;
   } else if (step === 1) {
-    h += `<div class="infobox">Run a test to measure the real physics of your layout. <b>No ratings exist until a test run completes.</b></div>`;
+    if (r.status !== 'testing') h += `<div class="infobox">Run a test to measure the real physics of your layout. <b>No ratings exist until a test run completes.</b></div>`;
+    else h += `<div class="infobox">Testing… the train collects stats on its first lap.</div>`;
     if (r.status === 'testing' && r.sim) {
       const lv = r.sim.live, tr = r.sim.trains[0];
       h += `<div class="big" style="text-align:center;color:#ffe9a8">${mphOf(lv.v)} mph</div>
@@ -163,6 +164,7 @@ function winCoaster(r: any) {
     } else {
       h += `<div class="btn go ${v.ok ? '' : 'dis'}" data-a="test" style="padding:9px;text-align:center">▶ Start test run</div>` + (v.ok ? '' : '<div class="warnbox">Complete the circuit and fix the red items first.</div>');
     }
+    h += `<div class="row" style="margin-top:8px"><span></span><span class="btn bad" data-a="demolish">Demolish ride</span></div>`;
   } else if (step === 2 && r.ratings) {
     const rt = r.ratings, f = rt.info;
     h += ratingRows(rt);
@@ -176,7 +178,8 @@ function winCoaster(r: any) {
     <tr><td>Max lateral G</td><td>${f.maxLat.toFixed(2)}</td></tr><tr><td>Max longitudinal G</td><td>${f.maxLong.toFixed(2)}</td></tr>
     <tr><td>Inversions</td><td>${f.inv}</td></tr><tr><td>Helices</td><td>${f.hel}</td></tr>
     <tr><td>Scenery nearby</td><td>${f.prox.scen}</td></tr><tr><td>Track crossings</td><td>${f.prox.cross}</td></tr>
-    <tr><td>Upstop wheels</td><td>${f.upstop ? 'Yes' : 'No (derail risk)'}</td></tr></table>`;
+    <tr><td>Upstop wheels</td><td>${f.upstop ? 'Yes' : 'No (derail risk)'}</td></tr></table>
+    <div class="row" style="margin-top:8px"><span></span><span class="btn bad" data-a="demolish">Demolish ride</span></div>`;
   } else if (step === 3) {
     if (!r.ratings) h += `<div class="warnbox">🔒 Test the ride first. A ride without ratings cannot be priced.</div>`;
     else {
@@ -186,6 +189,7 @@ function winCoaster(r: any) {
       <input type="range" data-i="price" min="0" max="20" step="0.1" value="${r.price}" ${fee ? 'disabled' : ''}>
       ${fee ? '<div class="wn">This park charges an entry fee, so rides are free. Switch in the Park window — the two are mutually exclusive.</div>' : r.price > maxP ? `<div class="warnbox">Price is above ${gbp(maxP)} — every guest will refuse to ride!</div>` : r.price > r.ratings.value ? '<div class="wn">Above ride value: fewer guests will queue.</div>' : '<div class="ok">Fair price.</div>'}`;
     }
+    h += `<div class="row" style="margin-top:8px"><span></span><span class="btn bad" data-a="demolish">Demolish ride</span></div>`;
   } else if (step === 4 && r.ratings) {
     h += `${r.status === 'open' ? `<div class="btn bad" data-a="close" style="padding:9px;text-align:center">Close ride</div>` : `<div class="btn go" data-a="open" style="padding:9px;text-align:center">🎟 Open ride to guests</div>`}
     ${r.ratings.inten > 10 ? '<div class="warnbox">Intensity is above 10.00 — guests will refuse to ride.</div>' : ''}
@@ -395,7 +399,9 @@ function updateHover() {
   const c = cellAt(ui.mouse.x, ui.mouse.y);
   view.hx = c.x; view.hy = c.y; view.cells = []; view.ghostKind = null; view.ghostCell = null;
   const t = ui.tool;
-  if (ui.mouse.y < 44 || ui.mouse.y > cam.vh - 80) return;
+  const topH = elTop.getBoundingClientRect().bottom;
+  const toolsTop = elTools.getBoundingClientRect().top;
+  if (ui.mouse.y < topH || ui.mouse.y > toolsTop) return;
   if (t === 'path' || t === 'queue') view.cells = [[c.x, c.y, validPlaceCell(t, c.x, c.y)]];
   else if (t === 'bulldoze') view.cells = [[c.x, c.y, false]];
   else if (['tree1', 'tree2', 'tree3', 'bush', 'flower', 'bench', 'lamp', 'bin'].includes(t)) { view.ghostKind = t; view.ghostCell = [c.x, c.y]; view.cells = [[c.x, c.y, validPlaceCell(t, c.x, c.y)]]; }
@@ -433,6 +439,9 @@ function applyTool(x: number, y: number, drag = false) {
 function onDown(e: PointerEvent) {
   const m = ui.mouse; m.x = e.offsetX; m.y = e.offsetY; m.down = true; m.btn = e.button; m.sx = e.offsetX; m.sy = e.offsetY; m.moved = 0;
   cv.setPointerCapture(e.pointerId);
+  const topH = elTop.getBoundingClientRect().bottom;
+  const toolsTop = elTools.getBoundingClientRect().top;
+  if (m.y < topH || m.y > toolsTop) return;
   if (e.button === 0 && ui.tool !== 'select') { const c = cellAt(m.x, m.y); applyTool(c.x, c.y); ui.paintLast = idx(c.x, c.y); }
 }
 function onMove(e: PointerEvent) {
@@ -442,8 +451,12 @@ function onMove(e: PointerEvent) {
     if (m.btn !== 0 || ui.tool === 'select') {
       if (m.moved > 4) { const c = camScreen(); unproj(c.x - dx / cam.zoom, c.y - dy / cam.zoom, 0); cam.fx = clamp(UP.x, 0, W); cam.fy = clamp(UP.y, 0, W); ui.follow = null; }
     } else if (['path', 'queue', 'bulldoze'].includes(ui.tool)) {
-      const c = cellAt(m.x, m.y), i = idx(c.x, c.y);
-      if (i !== ui.paintLast && c.x >= 0 && c.y >= 0 && c.x < MAP && c.y < MAP) { ui.paintLast = i; applyTool(c.x, c.y, true); }
+      const topH = elTop.getBoundingClientRect().bottom;
+      const toolsTop = elTools.getBoundingClientRect().top;
+      if (m.y >= topH && m.y <= toolsTop) {
+        const c = cellAt(m.x, m.y), i = idx(c.x, c.y);
+        if (i !== ui.paintLast && c.x >= 0 && c.y >= 0 && c.x < MAP && c.y < MAP) { ui.paintLast = i; applyTool(c.x, c.y, true); }
+      }
     }
   }
   updateHover();

@@ -133,8 +133,11 @@ function stepTrain(ride: any, tr: any, dt: number) {
     }
   }
   tr.s += tr.v * dt;
-  if (tr.s >= L) { tr.s -= L; tr.lap++; tr.phase = 'in'; }
-  else if (tr.s < 0) tr.s += L;
+  if (tr.s >= L) {
+    tr.s -= L; tr.lap++;
+    if (sim.mode === 'test') { tr.done = true; tr.phase = 'done'; }
+    else { tr.phase = 'in'; }
+  } else if (tr.s < 0) tr.s += L;
   const aT = (tr.v - vOld) / dt;
   // rollback
   if (tr.v < -0.4 && !onLift) {
